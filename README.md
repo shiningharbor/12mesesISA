@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nuestro pequeño infinito ♡
 
-## Getting Started
+Timeline romántico interactivo de **12 meses**, hecho sobre tu proyecto original con **Next.js 16 + React 19 + TypeScript**. Mantiene el verde profundo y el menta de la web original, con detalles rosa pastel de tu página de San Valentín.
 
-First, run the development server:
+## Ejecutar
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre `http://localhost:3000` o publícalo en Vercel como antes.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cambiar textos (todo en un solo lugar)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Edita `app/timeline-data.ts`:
 
-## Learn More
+- `siteContent`: portada, apodos, subtítulos, introducción, carta de la contraportada y firma.
+- `chapters`: los 12 meses, ordenados por número. Cambia título, texto, recuerdo destacado y `quote` (mensaje secreto desplegable).
 
-To learn more about Next.js, take a look at the following resources:
+## Añadir fotos
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Guarda tus imágenes en `public/fotos/`, por ejemplo:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+public/fotos/portada.jpg
+public/fotos/portada-detalle.jpg
+public/fotos/mes-01.jpg
+public/fotos/mes-01-detalle.jpg
+```
 
-## Deploy on Vercel
+Después, en `app/timeline-data.ts`, cambia las rutas correspondientes:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```ts
+heroPhoto: "/fotos/portada.jpg",
+heroDetailPhoto: "/fotos/portada-detalle.jpg",
+// Dentro del mes correspondiente:
+photo: "/fotos/mes-01.jpg",
+detailPhoto: "/fotos/mes-01-detalle.jpg",
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Si una ruta queda en `null`, aparece un marcador artístico con ranita. Los originales se muestran sin deformación (recorte `object-fit: cover`) y se pueden ampliar tocando la foto.
+
+## Interacciones
+
+- Portada estilo álbum físico: libro ilustrado, polaroids y ranita flotante.
+- Navegación entre 12 meses, barra de progreso de lectura y riel activo.
+- Mensajitos desplegables individuales en cada capítulo.
+- Acercamiento de fotografías con modal (se cierra con Escape o haciendo clic fuera).
+- Contraportada con sobre rosa que se abre para revelar la dedicatoria final.
+- Ranitas, patito, corazones y detalles de papelería decorativos, sin tapar el contenido.
+- Diseño responsivo y compatibilidad con `prefers-reduced-motion`.
+
+## Cambiar colores
+
+Las variables de color están arriba de `app/globals.css`. Los principales verdes del sitio original se conservan. Los acentos están en `--pink`, `--pink-light` y `--coral`.
+
+**No son necesarias librerías adicionales** a las de tu proyecto original.

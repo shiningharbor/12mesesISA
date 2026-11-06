@@ -1,0 +1,18 @@
+Coloca aquí las fotografías de tu historia.
+
+Ejemplos de nombres:
+- portada.jpg
+- portada-detalle.jpg
+- mes-01.jpg
+- mes-01-detalle.jpg
+- mes-02.jpg
+- mes-02-detalle.jpg
+...
+- mes-12.jpg
+- mes-12-detalle.jpg
+
+Después abre app/timeline-data.ts y cambia las propiedades:
+photo: null,       -> photo: "/fotos/mes-01.jpg",
+detailPhoto: null, -> detailPhoto: "/fotos/mes-01-detalle.jpg",
+
+También puedes dejar una de las dos en null hasta conseguir la foto.
