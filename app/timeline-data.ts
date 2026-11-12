@@ -19,9 +19,9 @@ export type Chapter = {
 };
 
 export const siteContent = {
-  topLabel: "NUESTRO PEQUEÑO INFINITO",
+  topLabel: "NUESTRO PEQUEÑO MUNDO",
   headerAction: "EMPEZAR RECORRIDO",
-  albumTop: "UN CAMINITO DE DOS",
+  albumTop: "UN CAMINITO DE LOS DOS",
   albumTitleFirst: "Nuestro",
   albumTitleSecond: "camino",
   albumSubtitle: "12 paradas · infinitos recuerdos",
@@ -51,8 +51,8 @@ export const siteContent = {
   heroButton: "Empezar el recorrido",
   heroHandwritten: "Con amor, tu Patito y Papatín",
   heroRibbon: "edición de nosotros ♡",
-  heroPhoto: null as string | null,
-  heroDetailPhoto: null as string | null,
+  heroPhoto: "/fotos/portada.png",
+  heroDetailPhoto: "/fotos/portada02.jpeg",
   introKicker: "UNA NOTITA ANTES DE EMPEZAR",
   introTitle: "Hay historias que no se cuentan. Se sienten.",
   introDescription: "Este espacio no quiere sentirse como páginas separadas, sino como un paseo entre recuerdos: los días bonitos, los momentos inesperados y todo eso que me gustaría volver a vivir contigo mil veces.",
@@ -66,8 +66,8 @@ export const siteContent = {
 };
 
 export const chapters: Chapter[] = [
-  { number: 1, title: "Donde comenzó todo", kicker: "El primer hola", description: "Aquí puedes contar cómo comenzó su historia. Ese primer mensaje, la primera salida o el momento en que todo empezó a sentirse diferente.", quote: "Todavía no lo sabíamos, pero ahí comenzaba mi parte favorita de la vida.", memory: "Nuestro primer recuerdo", photo: null, detailPhoto: null },
-  { number: 2, title: "Las primeras mariposas", kicker: "Todo era nuevo", description: "Escribe sobre su primera cita especial, las miradas nerviosas, las conversaciones interminables y esas pequeñas primeras veces que se quedaron contigo.", quote: "Me gustaba todo, pero sobre todo me gustaba estar contigo.", memory: "La primera de muchas aventuras", photo: null, detailPhoto: null },
+  { number: 1, title: "Donde comenzó todo", kicker: "El primer hola", description: "Aquí puedes contar cómo comenzó su historia. Ese primer mensaje, la primera salida o el momento en que todo empezó a sentirse diferente.", quote: "Todavía no lo sabíamos, pero ahí comenzaba mi parte favorita de la vida.", memory: "Nuestro primer recuerdo", photo: "/fotos/mes1_01.jpeg", detailPhoto: "/fotos/mes1_02.jpeg" },
+  { number: 2, title: "Las primeras mariposas", kicker: "Todo era nuevo", description: "Escribe sobre su primera cita especial, las miradas nerviosas, las conversaciones interminables y esas pequeñas primeras veces que se quedaron contigo.", quote: "Me gustaba todo, pero sobre todo me gustaba estar contigo.", memory: "La primera de muchas aventuras", photo: "/fotos/mes2_01.jpeg", detailPhoto: "/fotos/mes2_02.jpeg" },
   { number: 3, title: "Nuestro propio mundo", kicker: "Pequeñas costumbres", description: "Aquí van sus primeras bromas internas, sus lugares favoritos y esas palabras que solo ustedes entienden. Un universo chiquito hecho para dos.", quote: "De pronto, las cosas más sencillas se volvieron nuestras favoritas.", memory: "Eso que solo tú y yo entendemos", photo: null, detailPhoto: null },
   { number: 4, title: "Días de risa infinita", kicker: "Sonrisas compartidas", description: "Recuerda un día especialmente divertido, una cita improvisada o esa anécdota que sigue haciéndolos reír hasta hoy.", quote: "Con mi Bronquitas hasta los días normales tienen magia.", memory: "La risa que todavía recuerdo", photo: null, detailPhoto: null },
   { number: 5, title: "Aventuras de dos", kicker: "Contigo a donde sea", description: "Un viaje, una caminata, una tarde de descubrimientos: aquí va ese recuerdo en el que el mundo parecía más bonito porque lo estaban recorriendo juntos.", quote: "Mi lugar favorito nunca fue un lugar. Siempre fuiste tú.", memory: "Un destino que llevaré conmigo", photo: null, detailPhoto: null },
