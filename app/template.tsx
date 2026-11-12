@@ -8,11 +8,11 @@ import styles from "./premiere.module.css";
    CONFIGURACIÓN — aquí puedes activar, desactivar y editar el estreno.
    ═══════════════════════════════════════════════════════════════════ */
 const ESTRENO_ACTIVO = true;
-const FECHA_ESTRENO = "2026-12-12T12:00:00-06:00"; // fecha y hora de Ciudad de México
+const FECHA_ESTRENO = "2026-11-12T12:00:00-06:00"; // fecha y hora de Ciudad de México
 
 const MUSICA_ACTIVA = true;
 const ARCHIVO_MUSICA = "/musica/ambiente-original.mp3";
-const VOLUMEN_MUSICA = 0.35; // de 0 a 1
+const VOLUMEN_MUSICA = 1; // de 0 a 1
 
 const TEXTO_SUPERIOR = "UNA SORPRESITA PARA MI LEONCITA ♡";
 const TITULO = "Nuestro pequeño MUNDO";
