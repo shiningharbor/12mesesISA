@@ -1,625 +1,298 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import styles from "./album.module.css";
 import { chapters, siteContent, type Chapter } from "./timeline-data";
 
-const two = (n: number) => String(n).padStart(2, "0");
+const LAST = chapters.length + 3; // portada, introducción, 12 meses, carta, contraportada
+const two = (value: number) => String(value).padStart(2, "0");
 
-function Icon({
-  name = "heart",
-  size = 18,
+function Frog({ className = "" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 150 145" fill="none" role="img" aria-label="Ranita sonriente">
+      <path d="M22 80c-7-20 2-39 19-48-2-16 9-27 24-26 12 1 18 9 18 18 2-10 11-17 23-16 17 2 24 16 19 29 18 12 22 33 15 52-8 26-35 41-67 38C40 125 26 108 22 80Z" fill="#A8CE91" stroke="#416B4C" strokeWidth="3.5" strokeLinejoin="round" />
+      <path d="M48 37c6-7 14-7 19 0M94 37c6-7 14-7 19 0" stroke="#29452F" strokeWidth="3.5" strokeLinecap="round" />
+      <ellipse cx="41" cy="59" rx="10" ry="6" fill="#F0AABD" /><ellipse cx="116" cy="59" rx="10" ry="6" fill="#F0AABD" />
+      <path d="M66 58q12 11 23 0" stroke="#29452F" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M77 103c-23-14-30-26-22-34 8-8 18-3 22 4 6-8 16-11 23-3 9 10-2 23-23 33Z" fill="#F5BACB" stroke="#BA7B8B" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M48 82q10 13 22 18M106 83q-11 13-21 17" stroke="#416B4C" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="m44 119-8 8m79-8 8 8" stroke="#416B4C" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function Duck({ className = "" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 156 141" fill="none" role="img" aria-label="Patito amarillo tierno">
+      <path d="M41 90C24 82 19 62 28 46c7-13 19-19 30-21C63 10 79 5 96 12c16 6 25 21 25 39 17 3 28 17 27 35-1 26-23 44-58 44-26 0-41-10-49-40Z" fill="#FFE5A4" stroke="#997D49" strokeWidth="3.4" strokeLinejoin="round" />
+      <path d="M69 25c-3-6-1-12 4-16M85 22c1-8 5-13 11-15" stroke="#997D49" strokeWidth="3.3" strokeLinecap="round" />
+      <circle cx="97" cy="59" r="4.3" fill="#4C4030" /><circle cx="98" cy="57.5" r="1.1" fill="white" />
+      <ellipse cx="89" cy="74" rx="10" ry="6" fill="#F5B3BB" />
+      <path d="M107 75q14-14 28-8c8 4 9 10 5 16-7 9-23 8-33-8Z" fill="#F5A16F" stroke="#C98160" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M69 72q8 9 17 0" stroke="#4C4030" strokeWidth="3.2" strokeLinecap="round" />
+      <path d="M49 94c11 14 25 19 40 19" stroke="#E8C77F" strokeWidth="6" strokeLinecap="round" />
+      <path d="M74 127v9m25-8v8" stroke="#997D49" strokeWidth="3.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function TinyDoodles({ withDuck = true }: { withDuck?: boolean }) {
+  return <div className={styles.doodles} aria-hidden="true"><Frog className={styles.doodleFrog} />{withDuck && <Duck className={styles.doodleDuck} />}<span className={styles.doodleHeart}>♡</span></div>;
+}
+
+function AlbumPhoto({ src, label, size = "big", onZoom }: { src: string | null; label: string; size?: "big" | "small"; onZoom: (src: string, label: string) => void }) {
+  return <div className={`${styles.polaroid} ${size === "small" ? styles.polaroidSmall : ""}`}>
+    <span className={styles.washiTape} aria-hidden="true" />
+    {src ? <button className={styles.photoButton} type="button" onClick={() => onZoom(src, label)} aria-label={`Ampliar foto: ${label}`}><img src={src} alt={label} /></button> :
+      <div className={styles.emptyPhoto} role="img" aria-label={`Espacio para foto: ${label}`}><span className={styles.emptySun}>✳</span><Frog className={styles.photoFrog} /><span>Aquí va<br />nuestro recuerdo ♡</span></div>}
+    <span className={styles.photoCaption}>{label}</span>
+  </div>;
+}
+
+function MemoryNote({ chapter, isOpen, toggle }: { chapter: Chapter; isOpen: boolean; toggle: () => void }) {
+  return <div className={`${styles.memoryNote} ${isOpen ? styles.noteOpen : ""}`}>
+    <button type="button" aria-expanded={isOpen} className={styles.noteButton} onClick={toggle}><span>✉</span>{isOpen ? "Cerrar mensajito" : "Abrir mensajito secreto"}<span aria-hidden="true">{isOpen ? "−" : "+"}</span></button>
+    {isOpen && <div className={styles.noteInside}><p>“{chapter.quote}”</p><small>{siteContent.chapterNoteSignature}</small></div>}
+  </div>;
+}
+
+function ChapterText({ chapter, open, toggle }: { chapter: Chapter; open: boolean; toggle: () => void }) {
+  return <>
+    <span className={styles.pageEyebrow}>UN PEDACITO DE NOSOTROS · {two(chapter.number)}</span>
+    <h2 className={styles.memoryTitle}>{chapter.title}<span className={styles.pinkDot}>.</span></h2>
+    <p className={styles.kickerHand}>{chapter.kicker} ♡</p>
+    <p className={styles.memoryDescription}>{chapter.description}</p>
+    <div className={styles.memoryTag}>♡ {chapter.memory}</div>
+    <MemoryNote chapter={chapter} isOpen={open} toggle={toggle} />
+  </>;
+}
+
+function FinalLetter({ open, toggle }: { open: boolean; toggle: () => void }) {
+  return <div className={`${styles.finalLetterWrap} ${open ? styles.finalLetterOpen : ""}`}>
+    {open ? <div className={styles.letterPaper}>
+      <span className={styles.letterAddress}>{siteContent.endingLetterTop}</span>
+      <p>{siteContent.endingText}</p><span className={styles.letterSign}>{siteContent.signature}</span>
+      <button type="button" className={styles.letterClose} onClick={toggle}>Cerrar cartita ×</button>
+    </div> : <button className={styles.envelope} type="button" onClick={toggle} aria-label="Abrir carta para Leoncita"><span className={styles.envelopeFlap} /><span className={styles.envelopeFront} /><span className={styles.seal}>♥</span></button>}
+  </div>;
+}
+
+function StagePage({
+  stage, side, onZoom, noteOpen, toggleNote, letterOpen, toggleLetter,
 }: {
-  name?: "heart" | "arrow" | "up" | "close" | "sparkle" | "expand" | "trail";
-  size?: number;
+  stage: number; side: "left" | "right" | "mobile"; onZoom: (src: string, label: string) => void;
+  noteOpen: boolean; toggleNote: (stage: number) => void; letterOpen: boolean; toggleLetter: () => void;
 }) {
-  const paths = {
-    heart: <path d="M20.7 5.1a5.3 5.3 0 0 0-7.5 0L12 6.3l-1.2-1.2a5.3 5.3 0 0 0-7.5 7.5L12 21l8.7-8.4a5.3 5.3 0 0 0 0-7.5Z" />,
-    arrow: (
-      <>
-        <path d="M5 12h14" />
-        <path d="m13 6 6 6-6 6" />
-      </>
-    ),
-    up: (
-      <>
-        <path d="M12 19V5" />
-        <path d="m6 11 6-6 6 6" />
-      </>
-    ),
-    close: (
-      <>
-        <path d="M5 5 19 19M19 5 5 19" />
-      </>
-    ),
-    sparkle: (
-      <>
-        <path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
-        <path d="m19 17 .6 2.4L22 20l-2.4.6L19 23l-.6-2.4L16 20l2.4-.6L19 17Z" />
-      </>
-    ),
-    expand: (
-      <>
-        <path d="M8 4H4v4M16 20h4v-4M4 4l6 6M20 20l-6-6" />
-      </>
-    ),
-    trail: (
-      <>
-        <path d="M4 16c4-10 12-10 16 0" />
-        <path d="M7 11c1.5 2 3 3 5 3s3.5-1 5-3" />
-      </>
-    ),
-  };
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {paths[name]}
-    </svg>
-  );
-}
+  const isMobile = side === "mobile";
+  const isLeft = side === "left";
+  const pageNo = stage === 1 ? 0 : stage >= 2 && stage <= 13 ? stage - 1 : 13;
+  const chapter = stage >= 2 && stage <= 13 ? chapters[stage - 2] : null;
 
-function FrogDoodle({ className = "", sleepy = false }: { className?: string; sleepy?: boolean }) {
-  return (
-    <svg className={className} viewBox="0 0 142 130" role="img" aria-label="Ranita tierna con un corazón" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M22 74c-3-17 3-33 17-41-3-13 4-23 16-24 11-1 18 7 19 17h3c2-10 10-17 21-16 13 1 19 13 14 25 15 10 20 26 15 42-5 22-25 37-53 37-28 0-47-14-52-40Z" fill="#A8CE91" stroke="#37654A" strokeWidth="3.2" strokeLinejoin="round" />
-      <circle cx="55" cy="30" r="4" fill="#23412B" />
-      <circle cx="97" cy="30" r="4" fill="#23412B" />
-      {sleepy ? (
-        <>
-          <path d="M48 31c4 5 9 5 14 0M90 31c4 5 9 5 14 0" stroke="#23412B" strokeWidth="3" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <circle cx="56" cy="29" r="1.4" fill="white" />
-          <circle cx="98" cy="29" r="1.4" fill="white" />
-        </>
-      )}
-      <ellipse cx="43" cy="51" rx="9" ry="5" fill="#EEA7B7" opacity=".86" />
-      <ellipse cx="109" cy="51" rx="9" ry="5" fill="#EEA7B7" opacity=".86" />
-      <path d="M65 48c8 8 17 8 24 0" stroke="#23412B" strokeWidth="3" strokeLinecap="round" />
-      <path d="M75 87c-21-13-29-24-21-33 7-7 17-3 21 4 5-7 15-11 22-4 9 9-1 22-22 33Z" fill="#F7A9B8" stroke="#B96D7A" strokeWidth="2.1" strokeLinejoin="round" />
-      <path d="M49 69c5 12 13 16 20 18M103 69c-5 12-13 16-20 18" stroke="#37654A" strokeWidth="3.6" strokeLinecap="round" />
-      <path d="M44 107c-5 8-10 8-14 8M104 107c5 8 10 8 14 8" stroke="#37654A" strokeWidth="3" strokeLinecap="round" />
-      <path d="m120 9 2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6Z" fill="#F7C2C9" />
-    </svg>
-  );
-}
+  if (stage === 1) {
+    if (!isMobile && !isLeft) return <div className={`${styles.sheetInner} ${styles.introRight}`}>
+      <span className={styles.paperCorner}>✳</span>
+      <div className={styles.introPostcard}><AlbumPhoto src={siteContent.heroPhoto} label="nuestro primer recuerdo" onZoom={onZoom} /></div>
+      <span className={styles.introSmallLabel}>DE PATITO PARA LEONCITA</span>
+      <TinyDoodles />
+      <p className={styles.introHandLine}>Todo lo que viene, contigo.</p>
+    </div>;
+    return <div className={`${styles.sheetInner} ${styles.introLeft}`}>
+      <span className={styles.pageEyebrow}>ANTES DE COMENZAR...</span>
+      <div className={styles.heartSketch}>♡</div>
+      <h2 className={styles.introTitle}>Nuestra historia<br /><em>en papel.</em></h2>
+      <p className={styles.introLead}>{siteContent.introTitle}</p>
+      <p className={styles.introBody}>{siteContent.introDescription}</p>
+      <div className={styles.introFooter}>12 meses · 2 corazones · ∞ aventuras</div>
+      {isMobile && <TinyDoodles />}
+    </div>;
+  }
 
-function DuckDoodle({ className = "" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 160 140" role="img" aria-label="Patito tierno" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M43 91c-10-4-17-13-17-25 0-18 13-29 29-33 3-19 16-30 34-30 20 0 34 15 34 36 14 4 24 15 24 31 0 23-20 39-52 39-25 0-43-7-52-18Z" fill="#FFE69C" stroke="#8E7642" strokeWidth="3.5" strokeLinejoin="round" />
-      <path d="M65 28c-2-8 1-15 8-20" stroke="#8E7642" strokeWidth="3.3" strokeLinecap="round" />
-      <path d="M84 26c1-8 6-14 14-16" stroke="#8E7642" strokeWidth="3.3" strokeLinecap="round" />
-      <circle cx="95" cy="48" r="4.3" fill="#2D271E" />
-      <circle cx="96.4" cy="46.8" r="1.2" fill="white" />
-      <path d="M103 60c9 2 15 1 19-2 5-3 10-3 14-1 5 2 9 8 7 13-3 8-18 12-40 8" fill="#F4A164" stroke="#C97550" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M84 66c6 4 13 4 18 0" stroke="#8E7642" strokeWidth="3" strokeLinecap="round" />
-      <ellipse cx="82" cy="61" rx="8" ry="5" fill="#F4CC83" opacity=".72" />
-      <path d="M57 90c9 12 23 18 41 18 10 0 19-2 27-6" stroke="#F2D28C" strokeWidth="5" strokeLinecap="round" />
-      <ellipse cx="114" cy="56" rx="7" ry="4.4" fill="#F5B0B9" opacity=".7" />
-      <path d="M70 112v8M95 114v8" stroke="#8E7642" strokeWidth="3.2" strokeLinecap="round" />
-      <path d="M31 26c-10-7-13-15-9-21 5-7 14-4 17 2 4-5 12-5 15 0 5 8-5 18-23 25Z" fill="#F6B9C9" />
-      <path d="M37 90c4 0 8 2 11 6" stroke="#8E7642" strokeWidth="3.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function PhotoFrame({
-  src,
-  label,
-  className = "",
-  onZoom,
-}: {
-  src: string | null;
-  label: string;
-  className?: string;
-  onZoom: (src: string, label: string) => void;
-}) {
-  const interior = src ? (
-    <>
-      <img src={src} alt={label} loading="lazy" />
-      <span className="photo-expand">
-        <Icon name="expand" size={16} /> VER FOTO
-      </span>
-    </>
-  ) : (
-    <div className="photo-empty">
-      <span className="photo-empty-sun">✳</span>
-      <FrogDoodle className="placeholder-frog" sleepy />
-      <span className="photo-empty-small">UN RECUERDO POR GUARDAR</span>
-      <span className="photo-empty-title">Aquí va nuestra foto ♡</span>
-      <span className="photo-empty-label">{label}</span>
-    </div>
-  );
-
-  return src ? (
-    <button type="button" className={`photo-frame photo-frame--clickable ${className}`} onClick={() => onZoom(src, label)} aria-label={`Ampliar fotografía: ${label}`}>
-      {interior}
-    </button>
-  ) : (
-    <div className={`photo-frame ${className}`} role="img" aria-label={`Espacio para ${label}`}>
-      {interior}
-    </div>
-  );
-}
-
-function TrailBadge({ number }: { number: string }) {
-  return (
-    <span className="trail-badge" aria-hidden="true">
-      <span>{number}</span>
-    </span>
-  );
-}
-
-function TimelineChapter({ chapter, index, onZoom }: { chapter: Chapter; index: number; onZoom: (src: string, label: string) => void }) {
-  const [noteOpen, setNoteOpen] = useState(false);
-  const next = chapters[index + 1];
-  const num = two(chapter.number);
-  const sideClass = index % 2 === 0 ? "chapter--left" : "chapter--right";
-  const sceneKind = ["bosque", "laguito", "picnic", "jardin"][index % 4];
-  const sceneLabels = ["El bosquecito", "Nuestro laguito", "Una tarde de picnic", "Entre florecitas"];
-
-  return (
-    <article id={`mes-${num}`} data-month={chapter.number} className={`chapter ${sideClass} chapter--${sceneKind}`}>
-      <TrailBadge number={num} />
-      <span className="station-petal station-petal--one" aria-hidden="true">✿</span>
-      <span className="station-petal station-petal--two" aria-hidden="true">✧</span>
-      <div className="chapter-lane">
-        <div className="chapter-card chapter-copy">
-          <div className="chapter-eyebrow">
-            <span className="eyebrow-star">✳</span> PARADA {num}
-            <span className="eyebrow-line" />
-            {chapter.kicker}
-          </div>
-          <h3>
-            {chapter.title}
-            <span className="title-period">.</span>
-          </h3>
-          <p className="chapter-description">{chapter.description}</p>
-          <div className="memory-pill">
-            <Icon name="heart" size={14} /> {chapter.memory}
-          </div>
-
-          <div className={`secret-note ${noteOpen ? "secret-note--open" : ""}`}>
-            <button className="secret-note-trigger" type="button" aria-expanded={noteOpen} onClick={() => setNoteOpen((open) => !open)}>
-              <span className="secret-note-icon">{noteOpen ? "♡" : "✉"}</span>
-              <span>{noteOpen ? "Guardar mensajito" : "Abrir mensajito del mes"}</span>
-              <span className="secret-note-plus">{noteOpen ? "−" : "+"}</span>
-            </button>
-            <div className="secret-note-reveal">
-              <div>
-                <p>“{chapter.quote}”</p>
-                <span>{siteContent.chapterNoteSignature}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="chapter-navigation">
-            {index > 0 && (
-              <a href={`#mes-${two(index)}`} aria-label="Ir al capítulo anterior" className="chapter-prev">
-                ← Regresar un pasito
-              </a>
-            )}
-            {next ? (
-              <a className="chapter-next" href={`#mes-${two(next.number)}`}>
-                Seguir caminando <Icon name="arrow" size={16} />
-              </a>
-            ) : (
-              <a className="chapter-next" href="#final">
-                Llegar al final <Icon name="arrow" size={16} />
-              </a>
-            )}
-          </div>
-        </div>
-
-        <div className="chapter-card chapter-scene">
-          <div className={`chapter-photo-scene chapter-photo-scene--${sceneKind}`}>
-            <div className="station-nature" aria-hidden="true">
-              <span className="station-nature-hill" />
-              <span className="station-nature-tree station-nature-tree--one" />
-              <span className="station-nature-tree station-nature-tree--two" />
-              <span className="station-nature-pond" />
-              <span className="station-nature-blanket" />
-              <span className="station-nature-flower station-nature-flower--one">✿</span>
-              <span className="station-nature-flower station-nature-flower--two">✿</span>
-              <span className="station-nature-butterfly">❧</span>
-            </div>
-            <span className="station-scene-tag">{sceneLabels[index % 4]} ♡</span>
-            <span className="chapter-photo-leaf chapter-photo-leaf--one" aria-hidden="true" />
-            <span className="chapter-photo-leaf chapter-photo-leaf--two" aria-hidden="true" />
-            <div className="chapter-polaroid chapter-polaroid--main">
-              <PhotoFrame src={chapter.photo} label={`Mes ${num}: foto principal`} onZoom={onZoom} />
-              <span className="polaroid-caption">recuerdo {num} · nosotros ♡</span>
-            </div>
-            <div className="chapter-polaroid chapter-polaroid--small">
-              <PhotoFrame src={chapter.detailPhoto} label={`Mes ${num}: detalle`} onZoom={onZoom} />
-              <span className="polaroid-caption">un detallito bonito</span>
-            </div>
-            <span className="chapter-photo-ticket">
-              {num} / 12 <Icon name="heart" size={13} />
-            </span>
-            {index % 4 === 0 ? <DuckDoodle className="chapter-duck" /> : <FrogDoodle className="chapter-frog" sleepy={index % 3 === 0} />}
-          </div>
-          <div className="chapter-photo-under">
-            <span>UN MOMENTO PARA VOLVER</span>
-            <span>✦</span>
-            <span>{chapter.kicker}</span>
-          </div>
-        </div>
+  if (chapter) {
+    if (!isMobile && !isLeft) return <div className={`${styles.sheetInner} ${styles.photoPage}`}>
+      <span className={styles.pageEyebrow}>RECUERDOS QUE GUARDAMOS</span>
+      <span className={styles.pageSketch} aria-hidden="true">⌁ ♡ ✿</span>
+      <div className={styles.photoArrangement}>
+        <AlbumPhoto src={chapter.photo} label={`nuestro mes ${two(chapter.number)} ♡`} onZoom={onZoom} />
+        <AlbumPhoto src={chapter.detailPhoto} size="small" label="un detallito" onZoom={onZoom} />
       </div>
-    </article>
-  );
+      <span className={styles.pageTicket}>♥ {two(chapter.number)} / 12 ♥</span>
+      <TinyDoodles withDuck={chapter.number % 3 !== 0} />
+      <span className={styles.pageBottomHand}>y todavía nos quedan tantas aventuras...</span>
+    </div>;
+    return <div className={`${styles.sheetInner} ${styles.textPage}`}>
+      <div className={styles.paperPin} aria-hidden="true" />
+      <span className={styles.pressedFlower} aria-hidden="true">❀</span>
+      <div className={styles.chapterNumber}>{two(chapter.number)}</div>
+      <ChapterText chapter={chapter} open={noteOpen} toggle={() => toggleNote(stage)} />
+      {isMobile && <div className={styles.mobilePhotos}><AlbumPhoto src={chapter.photo} label={`nuestro mes ${two(chapter.number)} ♡`} onZoom={onZoom} /><AlbumPhoto src={chapter.detailPhoto} label="un detallito" size="small" onZoom={onZoom} /></div>}
+      <span className={styles.pageFoot}>PAPATÍN + BRONQUITAS · {two(pageNo)}</span>
+    </div>;
+  }
+
+  if (stage === 14) {
+    if (!isMobile && !isLeft) return <div className={`${styles.sheetInner} ${styles.endingRight}`}>
+      <span className={styles.pageEyebrow}>UNA ÚLTIMA SORPRESA</span>
+      <FinalLetter open={letterOpen} toggle={toggleLetter} />
+      <TinyDoodles />
+      <span className={styles.pageFoot}>CON TODO MI AMOR, PATITO ♡</span>
+    </div>;
+    return <div className={`${styles.sheetInner} ${styles.endingLeft}`}>
+      <span className={styles.pageEyebrow}>EL FINAL DE ESTE TOMO...</span>
+      <div className={styles.heartSketch}>♥</div>
+      <h2 className={styles.endingTitle}>{siteContent.endingTitleFirst}<em>{siteContent.endingTitleSecond}</em></h2>
+      <p className={styles.endingIntro}>{siteContent.endingIntro}</p>
+      <span className={styles.endingHand}>Pero nuestra aventura apenas comienza.</span>
+      {isMobile && <FinalLetter open={letterOpen} toggle={toggleLetter} />}
+      <span className={styles.pageFoot}>DE TU PATITO PARA MI LEONCITA</span>
+    </div>;
+  }
+  return null;
+}
+
+function Spread({ stage, onZoom, noteOpen, toggleNote, letterOpen, toggleLetter }: {
+  stage: number; onZoom: (src: string, label: string) => void; noteOpen: boolean; toggleNote: (stage: number) => void; letterOpen: boolean; toggleLetter: () => void;
+}) {
+  const common = { stage, onZoom, noteOpen, toggleNote, letterOpen, toggleLetter };
+  if (stage === 0) return <div className={styles.coverScene}><div className={styles.cover}>
+    <div className={styles.coverSpine} /><div className={styles.coverBorder} />
+    <span className={`${styles.coverBotanical} ${styles.coverBotanicalLeft}`} aria-hidden="true">❧</span><span className={`${styles.coverBotanical} ${styles.coverBotanicalRight}`} aria-hidden="true">❧</span>
+    <span className={styles.coverGoldenStars} aria-hidden="true">✦ &nbsp; ✧ &nbsp; ✦</span>
+    <div className={styles.coverTop}>UN LIBRITO SOLO PARA NOSOTROS</div>
+    <div className={styles.coverTitle}><span>Nuestro</span><strong>álbum de</strong><em>aventuras</em></div>
+    <div className={styles.coverCloud}>♡</div>
+    <div className={styles.coverBadge}><span>LEONCITA</span><span>✳</span><span>PATITO</span></div>
+    <TinyDoodles />
+    <span className={styles.coverSubtitle}>12 meses · un amor que no se acaba</span>
+    <span className={styles.coverSealText}>✿ edición única para mi Leoncita ✿</span>
+    <span className={styles.coverBottom}>Hecho por Papatín para Bronquitas ♡</span>
+  </div></div>;
+  if (stage === LAST) return <div className={styles.coverScene}><div className={`${styles.cover} ${styles.backCover}`}>
+    <div className={styles.coverSpine} /><div className={styles.coverBorder} />
+    <span className={`${styles.coverBotanical} ${styles.coverBotanicalLeft}`} aria-hidden="true">❧</span><span className={`${styles.coverBotanical} ${styles.coverBotanicalRight}`} aria-hidden="true">❧</span>
+    <span className={styles.backHeart}>♡</span>
+    <h2>Y la aventura<br /><em>continúa...</em></h2>
+    <TinyDoodles />
+    <p>Gracias por llenar de magia nuestras páginas.</p><span className={styles.coverBottom}>SIEMPRE TÚ Y YO · ∞</span>
+  </div></div>;
+  return <>
+    <div className={styles.desktopSpread}>
+      <div className={`${styles.sheet} ${styles.sheetLeft}`}><StagePage {...common} side="left" /></div>
+      <div className={`${styles.sheet} ${styles.sheetRight}`}><StagePage {...common} side="right" /></div>
+      <div className={styles.bookSeam} aria-hidden="true" />
+    </div>
+    <div className={styles.mobileSpread}><div className={styles.mobileSheet}><StagePage {...common} side="mobile" /></div></div>
+  </>;
+}
+
+function FlipEffect({ direction, from, to, onZoom, noteOpen, toggleNote, letterOpen, toggleLetter }: {
+  direction: "next" | "prev"; from: number; to: number; onZoom: (src: string, label: string) => void;
+  noteOpen: boolean; toggleNote: (stage: number) => void; letterOpen: boolean; toggleLetter: () => void;
+}) {
+  const common = { onZoom, noteOpen, toggleNote, letterOpen, toggleLetter };
+  return <>
+    <div className={`${styles.desktopFlip} ${direction === "next" ? styles.flipForward : styles.flipBackward}`} aria-hidden="true">
+      <div className={`${styles.flipFace} ${styles.flipFaceFront}`}>
+        {from > 0 && from < LAST && <StagePage {...common} stage={from} side={direction === "next" ? "right" : "left"} />}
+        {(from === 0 || from === LAST) && <div className={styles.flipCloth} />}
+      </div>
+      <div className={`${styles.flipFace} ${styles.flipFaceBack}`}>
+        {to > 0 && to < LAST && <StagePage {...common} stage={to} side={direction === "next" ? "left" : "right"} />}
+        {(to === 0 || to === LAST) && <div className={styles.flipCloth} />}
+      </div>
+    </div>
+    <div className={`${styles.mobileFlip} ${direction === "next" ? styles.flipForward : styles.flipBackward}`} aria-hidden="true">
+      <div className={`${styles.flipFace} ${styles.flipFaceFront}`}>
+        {from > 0 && from < LAST && <StagePage {...common} stage={from} side="mobile" />}
+      </div>
+      <div className={`${styles.flipFace} ${styles.flipFaceBack}`}>
+        {to > 0 && to < LAST && <StagePage {...common} stage={to} side="mobile" />}
+      </div>
+    </div>
+  </>;
 }
 
 export default function Home() {
-  const [activeMonth, setActiveMonth] = useState(1);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [timelineProgress, setTimelineProgress] = useState(0);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [active, setActive] = useState(0);
+  const [turning, setTurning] = useState<{ from: number; to: number; direction: "next" | "prev" } | null>(null);
+  const [openNote, setOpenNote] = useState<number | null>(null);
   const [letterOpen, setLetterOpen] = useState(false);
   const [zoom, setZoom] = useState<{ src: string; label: string } | null>(null);
-  const ticking = useRef(false);
+  const touchX = useRef<number | null>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const canTurn = !turning;
 
+  const turnTo = useCallback((destination: number) => {
+    if (turning || destination < 0 || destination > LAST || destination === active) return;
+    const direction = destination > active ? "next" : "prev";
+    setTurning({ from: active, to: destination, direction });
+    timers.current.forEach(clearTimeout);
+    timers.current = [setTimeout(() => setActive(destination), 440), setTimeout(() => setTurning(null), 930)];
+  }, [active, turning]);
+
+  useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
   useEffect(() => {
-    const updateScroll = () => {
-      ticking.current = false;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setScrollProgress(max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0);
-      setIsScrolled(window.scrollY > 60);
-
-      const timeline = document.querySelector<HTMLElement>(".chapters");
-      if (timeline) {
-        const rect = timeline.getBoundingClientRect();
-        setTimelineProgress(Math.max(0, Math.min(100, ((window.innerHeight * 0.42 - rect.top) / rect.height) * 100)));
-      }
-
-      const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-month]"));
-      let closest = 1;
-      let minDistance = Infinity;
-      nodes.forEach((node) => {
-        const rect = node.getBoundingClientRect();
-        const target = window.innerHeight * 0.43;
-        const distance = rect.top <= target && rect.bottom >= target ? 0 : Math.min(Math.abs(rect.top - target), Math.abs(rect.bottom - target));
-        if (distance < minDistance) {
-          minDistance = distance;
-          closest = Number(node.dataset.month);
-        }
-      });
-      if (nodes.length) setActiveMonth(closest);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setZoom(null); return; }
+      if (zoom || (event.target instanceof HTMLElement && ["INPUT", "TEXTAREA"].includes(event.target.tagName))) return;
+      if (event.key === "ArrowRight") { event.preventDefault(); turnTo(active + 1); }
+      if (event.key === "ArrowLeft") { event.preventDefault(); turnTo(active - 1); }
     };
-
-    const handleScroll = () => {
-      if (!ticking.current) {
-        ticking.current = true;
-        window.requestAnimationFrame(updateScroll);
-      }
-    };
-
-    updateScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-    };
-  }, []);
-
-  // Al avanzar entre estaciones, la navegación sigue la posición actual.
-  // En desktop se mueve dentro de la lista; en móvil, sobre la cinta horizontal.
-  useEffect(() => {
-    const nav = document.querySelector<HTMLElement>(".timeline-index");
-    const active = nav?.querySelector<HTMLElement>(".index-link--active");
-    if (!nav || !active) return;
-    const navRect = nav.getBoundingClientRect();
-    const activeRect = active.getBoundingClientRect();
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (window.matchMedia("(max-width: 1120px)").matches) {
-      nav.scrollTo({
-        left: nav.scrollLeft + activeRect.left - navRect.left - (nav.clientWidth - activeRect.width) / 2,
-        behavior: reducedMotion ? "instant" : "smooth",
-      });
-    } else {
-      nav.scrollTo({
-        top: nav.scrollTop + activeRect.top - navRect.top - (nav.clientHeight - activeRect.height) / 2,
-        behavior: reducedMotion ? "instant" : "smooth",
-      });
-    }
-  }, [activeMonth]);
-
-  useEffect(() => {
-    if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const elements = Array.from(document.querySelectorAll<HTMLElement>(".chapter, .reveal"));
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.08 },
-    );
-    elements.forEach((element) => {
-      element.classList.add("has-scroll-reveal");
-      observer.observe(element);
-    });
-    return () => observer.disconnect();
-  }, []);
-
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active, turnTo, zoom]);
   useEffect(() => {
     if (!zoom) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setZoom(null);
-    };
-    const oldOverflow = document.body.style.overflow;
+    const old = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = oldOverflow;
-      document.removeEventListener("keydown", onKey);
-    };
+    return () => { document.body.style.overflow = old; };
   }, [zoom]);
 
-  return (
-    <main>
-      <div className="reading-progress" style={{ transform: `scaleX(${scrollProgress / 100})` }} aria-hidden="true" />
+  const toggleNote = (stage: number) => setOpenNote(current => current === stage ? null : stage);
+  const onZoom = (src: string, label: string) => setZoom({ src, label });
+  const currentStage = active;
+  const stageLabel = currentStage === 0 ? "Portada" : currentStage === 1 ? "Antes de empezar" : currentStage === 14 ? "Una carta para ti" : currentStage === LAST ? "Contraportada" : `Mes ${two(currentStage - 1)} · ${chapters[currentStage - 2].title}`;
+  const common = { onZoom, noteOpen: openNote === active, toggleNote, letterOpen, toggleLetter: () => setLetterOpen(v => !v) };
 
-      <header className={`site-header ${isScrolled ? "site-header--scrolled" : ""}`}>
-        <a href="#inicio" className="header-brand" aria-label="Ir al inicio">
-          <span className="brand-heart">♡</span> P + L
-        </a>
-        <span className="header-center">{siteContent.topLabel}</span>
-        <a href="#timeline" className="header-link">
-          Empezar recorrido <Icon name="arrow" size={15} />
-        </a>
-      </header>
+  return <main className={styles.album}>
+    <div className={styles.deskTexture} aria-hidden="true" />
+    <div className={styles.forestVignette} aria-hidden="true" />
+    <div className={styles.floatingPetals} aria-hidden="true"><i/><i/><i/><i/><i/><i/></div>
+    <span className={`${styles.backgroundFlower} ${styles.flowerOne}`} aria-hidden="true">✿</span>
+    <span className={`${styles.backgroundFlower} ${styles.flowerTwo}`} aria-hidden="true">✳</span>
+    <div className={styles.tablePostcard} aria-hidden="true"><span>to: Leoncita ♡</span><span>love, Patito</span></div>
+    <div className={styles.tableFlower} aria-hidden="true">✿</div>
 
-      <section className="hero" id="inicio" aria-labelledby="hero-title">
-        <div className="floating-heart floating-heart--one">♥</div>
-        <div className="floating-heart floating-heart--two">♥</div>
-        <div className="floating-spark floating-spark--one">✦</div>
-        <div className="floating-spark floating-spark--two">✳</div>
+    <header className={styles.topbar}>
+      <div className={styles.topBrand}><span>♡</span> Nuestro pequeño infinito</div>
+      <div className={styles.topDescription}>Un álbum de aventuras para nosotros dos</div>
+      <div className={styles.topEdition}>VOL. 01 · P + L</div>
+    </header>
 
-        <div className="hero-layout">
-          <div className="hero-copy reveal">
-            <span className="hero-overline">
-              <span className="overline-heart">♥</span> {siteContent.heroKicker}
-            </span>
-            <h1 id="hero-title">
-              <span>{siteContent.heroTitleFirst}</span>
-              <em>{siteContent.heroTitleSecond}</em>
-            </h1>
-            <p className="hero-subtitle">{siteContent.heroDescription}</p>
+    <div className={styles.bookArea}>
+      <div className={styles.leftDecoration} aria-hidden="true"><span>NOTITAS<br />Y RECUERDOS</span><span>✦</span></div>
+      <div
+        className={`${styles.book} ${active === 0 || active === LAST ? styles.bookClosed : ""} ${turning ? styles.bookIsTurning : ""}`}
+        onTouchStart={e => { touchX.current = e.touches[0]?.clientX ?? null; }}
+        onTouchEnd={e => { if (touchX.current === null) return; const delta = (e.changedTouches[0]?.clientX ?? touchX.current) - touchX.current; touchX.current = null; if (Math.abs(delta) > 70) turnTo(active + (delta < 0 ? 1 : -1)); }}
+      >
+        <Spread stage={active} {...common} />
+        {turning && <FlipEffect {...turning} {...common} />}
+      </div>
+    </div>
 
-            <div className="hero-actions">
-              <a href="#introduccion" className="primary-button">
-                <span>{siteContent.heroButton}</span>
-                <span className="button-round">
-                  <Icon name="arrow" size={20} />
-                </span>
-              </a>
-              <div className="hero-handwritten">
-                {siteContent.heroHandwritten} <span>♡</span>
-              </div>
-            </div>
+    <nav className={styles.controls} aria-label="Controles del álbum">
+      <button type="button" onClick={() => turnTo(active - 1)} disabled={!canTurn || active === 0} className={styles.turnButton} aria-label="Pasar a la página anterior"><span aria-hidden="true">←</span><span>Anterior</span></button>
+      <div className={styles.currentPage} aria-live="polite"><span>{stageLabel}</span><small>{two(active)} / {two(LAST)}</small></div>
+      <button type="button" onClick={() => turnTo(active + 1)} disabled={!canTurn || active === LAST} className={`${styles.turnButton} ${styles.nextButton}`}><span>{active === 0 ? "Abrir el álbum" : active === LAST - 1 ? "Cerrar el álbum" : "Siguiente"}</span><span aria-hidden="true">→</span></button>
+    </nav>
 
-            <div className="hero-footnotes">
-              <span>{siteContent.heroFooterLeft}</span>
-              <span>{siteContent.heroFooterRight}</span>
-            </div>
-          </div>
+    <div className={styles.bookmarks} aria-label="Ir directamente a un recuerdo">
+      <button type="button" disabled={!canTurn} className={`${styles.bookmark} ${active === 0 ? styles.bookmarkActive : ""}`} onClick={() => turnTo(0)}>Portada</button>
+      {chapters.map(chapter => <button key={chapter.number} type="button" disabled={!canTurn} className={`${styles.bookmark} ${active === chapter.number + 1 ? styles.bookmarkActive : ""}`} onClick={() => turnTo(chapter.number + 1)} aria-label={`Ir al mes ${two(chapter.number)}`} aria-current={active === chapter.number + 1 ? "page" : undefined}>{two(chapter.number)}</button>)}
+      <button type="button" disabled={!canTurn} className={`${styles.bookmark} ${active === 14 ? styles.bookmarkActive : ""}`} onClick={() => turnTo(14)}>Carta ♡</button>
+    </div>
+    <p className={styles.bookHint}>♡ Cada página es una aventura que vivimos juntitos ♡</p>
 
-          <div className="hero-scene reveal" aria-label="Escena de portada tipo paseo romántico">
-            <div className="scene-sky" />
-            <div className="scene-sun" />
-            <div className="scene-hill scene-hill--back" />
-            <div className="scene-hill scene-hill--front" />
-            <div className="scene-pond" />
-            <div className="scene-path" />
-            <div className="scene-flowers scene-flowers--left" />
-            <div className="scene-flowers scene-flowers--right" />
-            <div className="hero-trees" aria-hidden="true"><span className="hero-tree hero-tree--one" /><span className="hero-tree hero-tree--two" /><span className="hero-tree hero-tree--three" /></div>
-            <div className="hero-picnic" aria-hidden="true"><span className="picnic-blanket" /><span className="picnic-basket" /><span className="picnic-flower">✿</span></div>
-            <span className="pond-ripple pond-ripple--one" aria-hidden="true" />
-            <span className="pond-ripple pond-ripple--two" aria-hidden="true" />
-
-            <div className="hero-memory hero-memory--main">
-              <div className="memory-tape" />
-              <PhotoFrame src={siteContent.heroPhoto} label="Nuestra foto de portada" onZoom={(src, label) => setZoom({ src, label })} />
-              <span>{siteContent.albumBottom}</span>
-            </div>
-
-            <div className="hero-memory hero-memory--detail">
-              <div className="memory-tape" />
-              <PhotoFrame src={siteContent.heroDetailPhoto} label="Detalle de portada" onZoom={(src, label) => setZoom({ src, label })} />
-              <span>{siteContent.albumSmallCaption}</span>
-            </div>
-
-            <div className="hero-sign hero-sign--left">
-              <strong>{siteContent.albumTitleFirst}</strong>
-              <span>{siteContent.albumTitleSecond}</span>
-            </div>
-            <div className="hero-sign hero-sign--right">
-              <strong>Leoncita</strong>
-              <span>y Patito</span>
-            </div>
-
-            <FrogDoodle className="hero-frog" />
-            <DuckDoodle className="hero-duck" />
-            <span className="hero-ribbon">{siteContent.heroRibbon}</span>
-          </div>
-        </div>
-
-        <div className="hero-bottom">
-          <span>{siteContent.topLabel}</span>
-          <a href="#introduccion" className="scroll-indicator">
-            {siteContent.heroScroll} <span>↓</span>
-          </a>
-          <span>{siteContent.albumSubtitle}</span>
-        </div>
-      </section>
-
-      <section id="introduccion" className="intro-section reveal" aria-labelledby="intro-title">
-        <div className="intro-card">
-          <div className="intro-badge">
-            <DuckDoodle className="intro-duck" />
-            <span>{siteContent.introStickerText}</span>
-          </div>
-          <div className="intro-copy">
-            <span className="eyebrow">
-              <span>✦</span> {siteContent.introKicker}
-            </span>
-            <h2 id="intro-title">{siteContent.introTitle}</h2>
-            <p>{siteContent.introDescription}</p>
-            <div className="intro-stats">
-              <span>
-                <strong>12</strong> estaciones
-              </span>
-              <span>
-                <strong>∞</strong> recuerdos
-              </span>
-              <span>
-                <strong>1</strong> caminito juntos
-              </span>
-            </div>
-          </div>
-          <div className="intro-note">
-            <span>{siteContent.introSideText}</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="timeline-section" id="timeline" aria-label="Nuestra historia en doce capítulos">
-        <div className="timeline-heading reveal">
-          <span className="eyebrow">✳ {siteContent.timelineTop}</span>
-          <div>
-            <h2>
-              {siteContent.timelineTitleFirst} <em>{siteContent.timelineTitleSecond}</em>
-            </h2>
-            <p>{siteContent.timelineDescription}</p>
-          </div>
-          <span className="heading-number">01 — 12</span>
-        </div>
-
-        <div className="timeline-layout">
-          <aside className="timeline-sidebar" aria-label="Navegación por capítulos">
-            <div className="sidebar-sticky reveal">
-              <div className="journey-card">
-                <span className="sidebar-title">{siteContent.timelineNavLabel}</span>
-                <div className="journey-active">
-                  <Icon name="trail" size={16} />
-                  <span>Ahora vas por la parada</span>
-                  <strong>{two(activeMonth)}</strong>
-                </div>
-                <nav className="timeline-index">
-                  {chapters.map((chapter) => (
-                    <a
-                      href={`#mes-${two(chapter.number)}`}
-                      key={chapter.number}
-                      className={`index-link ${activeMonth === chapter.number ? "index-link--active" : ""}`}
-                      aria-current={activeMonth === chapter.number ? "location" : undefined}
-                    >
-                      <span className="index-marker" />
-                      <span className="index-number">{two(chapter.number)}</span>
-                      <span className="index-month">{chapter.kicker}</span>
-                    </a>
-                  ))}
-                </nav>
-                <div className="sidebar-progress">
-                  <span>RECORRIDO</span>
-                  <div className="sidebar-progress-track">
-                    <span style={{ width: `${timelineProgress}%` }} />
-                  </div>
-                  <strong>
-                    {two(activeMonth)} <small>/ 12</small>
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <div className="chapters" style={{ "--timeline-progress": `${timelineProgress}%` } as CSSProperties}>
-            {chapters.map((chapter, index) => (
-              <TimelineChapter key={chapter.number} chapter={chapter} index={index} onZoom={(src, label) => setZoom({ src, label })} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="final" className="ending-section" aria-labelledby="ending-title">
-        <div className="ending-inner reveal">
-          <span className="ending-eyebrow">
-            <Icon name="heart" size={14} /> {siteContent.endingKicker}
-          </span>
-          <h2 id="ending-title">
-            {siteContent.endingTitleFirst}
-            <em>{siteContent.endingTitleSecond}</em>
-          </h2>
-          <p className="ending-subtitle">{siteContent.endingIntro}</p>
-
-          <div className={`letter-experience ${letterOpen ? "letter-experience--open" : ""}`}>
-            <div className="ending-landscape">
-              <div className="ending-hill ending-hill--back" />
-              <div className="ending-hill ending-hill--front" />
-              <div className="ending-pond" />
-              <span className="ending-lily ending-lily--one" aria-hidden="true" />
-              <span className="ending-lily ending-lily--two" aria-hidden="true" />
-              <span className="ending-flower" aria-hidden="true">✿</span>
-              <FrogDoodle className="ending-frog-scene" sleepy />
-              <DuckDoodle className="ending-duck-scene" />
-              <div className="letter-scene">
-                <div className="letter-sheet" aria-hidden={!letterOpen}>
-                  <span className="letter-sheet-top">{siteContent.endingLetterTop}</span>
-                  <p>{siteContent.endingText}</p>
-                  <span className="letter-signature">{siteContent.signature}</span>
-                </div>
-                <button type="button" className="envelope" onClick={() => setLetterOpen((value) => !value)} aria-expanded={letterOpen} aria-label={letterOpen ? "Cerrar la carta" : "Abrir carta para Leoncita"}>
-                  <span className="envelope-back" />
-                  <span className="envelope-flap" />
-                  <span className="envelope-front" />
-                  <span className="envelope-seal">♥</span>
-                </button>
-                <div className="letter-burst" aria-hidden="true">
-                  <span>♥</span>
-                  <span>✦</span>
-                  <span>♥</span>
-                  <span>✳</span>
-                  <span>♥</span>
-                </div>
-              </div>
-            </div>
-            <button className="letter-toggle" type="button" onClick={() => setLetterOpen((value) => !value)}>
-              {letterOpen ? siteContent.endingCloseAction : siteContent.endingOpenAction}
-              <Icon name={letterOpen ? "up" : "heart"} size={15} />
-            </button>
-          </div>
-
-          <div className="ending-bottom">
-            <span>{siteContent.endingBottom}</span>
-          </div>
-          <a href="#inicio" className="back-top">
-            {siteContent.endingBack} <Icon name="up" size={16} />
-          </a>
-        </div>
-      </section>
-
-      <footer className="footer">
-        <span>{siteContent.footerLeft}</span>
-        <span>{siteContent.footerCenter}</span>
-        <span>∞</span>
-      </footer>
-
-      {zoom && (
-        <div className="lightbox" role="dialog" aria-modal="true" aria-label={`Foto ampliada: ${zoom.label}`} onClick={() => setZoom(null)}>
-          <button className="lightbox-close" type="button" onClick={() => setZoom(null)} aria-label="Cerrar fotografía">
-            <Icon name="close" size={23} />
-          </button>
-          <figure onClick={(event) => event.stopPropagation()}>
-            <img src={zoom.src} alt={zoom.label} />
-            <figcaption>{zoom.label} ♡</figcaption>
-          </figure>
-        </div>
-      )}
-    </main>
-  );
+    {zoom && <div className={styles.lightbox} role="dialog" aria-modal="true" aria-label={`Foto: ${zoom.label}`} onClick={() => setZoom(null)}><button className={styles.zoomClose} type="button" onClick={() => setZoom(null)} aria-label="Cerrar foto">×</button><figure onClick={e => e.stopPropagation()}><img src={zoom.src} alt={zoom.label} /><figcaption>{zoom.label}</figcaption></figure></div>}
+  </main>;
 }
